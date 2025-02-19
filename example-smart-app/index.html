@@ -12,15 +12,16 @@
     -->
   </head>
   <body>
-    <div id='errors'>
-    </div>
+    <div id='errors'></div>
+
     <div id="loading" class="spinner">
       <div class="bounce1"></div>
       <div class="bounce2"></div>
       <div class="bounce3"></div>
     </div>
-    <div id='holder' >
-      <h2>Example-SMART-App</h2>
+
+    <div id='holder' style="display: none;">
+      <h2>Opala SMART App</h2>
 
       <h2>Patient Resource</h2>
       <table>
@@ -41,6 +42,7 @@
           <td id='birthdate'></td>
         </tr>
       </table>
+
       <h2>Observation Resource</h2>
       <table>
         <tr>
@@ -50,7 +52,6 @@
         <tr>
           <th>Systolic Blood Pressure:</th>
           <td id='systolicbp'></td>
-
         </tr>
         <tr>
           <th>Diastolic Blood Pressure:</th>
@@ -66,36 +67,35 @@
         </tr>
       </table>
     </div>
-    <!-- Required JS files to enable this page to embed within an MPage -->
-    <!--
-      Temporarily disable cerner-smart-embeddable-lib
-      <script src='https://cdnjs.cloudflare.com/ajax/libs/babel-polyfill/6.26.0/polyfill.min.js'></script>
-      <script src='./lib/js/cerner-smart-embeddable-lib-1.0.0.min.js'></script>
-    -->
 
-    <!-- Application-level javascript-->
+    <!-- Required JS files -->
     <script src='./src/js/example-smart-app.js'></script>
-
-    <!-- FHIR Client JS Library -->
     <script src='./lib/js/fhir-client-v0.1.12.js'></script>
-
-    <!-- Prevent session bleed caused by single threaded embedded browser and sessionStorage API -->
-    <!-- https://github.com/cerner/fhir-client-cerner-additions -->
     <script src='./lib/js/fhir-client-cerner-additions-1.0.0.js'></script>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+
     <script>
+      console.log("🚀 Running extractData() in index.html...");
+
       extractData().then(
-        //Display Patient Demographics and Observations if extractData was success
         function(p) {
+          console.log("✅ Successfully extracted data:", p);
+
+          // Hide the loading spinner
+          document.getElementById("loading").style.display = "none";
+
+          // Show patient data
+          document.getElementById("holder").style.display = "block";
+
+          // Populate the UI
           drawVisualization(p);
         },
-
-        //Display 'Failed to call FHIR Service' if extractData failed
-        function() {
-          $('#loading').hide();
-          $('#errors').html('<p> Failed to call FHIR Service </p>');
+        function(error) {
+          console.error("❌ Failed to fetch FHIR Service:", error);
+          document.getElementById("loading").style.display = "none";
+          document.getElementById("errors").innerHTML = `<p> ❌ Failed to load patient data. See console for details. </p>`;
         }
       );
-    </script>
+    </script>    
   </body>
 </html>
