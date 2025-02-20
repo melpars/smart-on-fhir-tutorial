@@ -90,18 +90,21 @@
 
     console.log("🚀 Calling FHIR.oauth2.ready()...");
 
-    FHIR.oauth2.ready(onReady, function(error) {
-      console.error("❌ Authorization Error:", error);
-    
-      // Check if error is undefined and provide a more helpful message
-      let errorMessage = error || "Unknown error - Check OAuth2 settings and network requests.";
-    
-      // Display error in the UI
-      $('#errors').html(`<p> ❌ Authorization Failed! ${errorMessage} See console for details. </p>`);
-    
-      // Ensure proper rejection
-      ret.reject(errorMessage);
-    });
+    FHIR.oauth2.ready().then(function(client) {
+      console.log("✅ FHIR Client Ready:", client);
+  
+      if (!client.state.tokenResponse || !client.state.tokenResponse.access_token) {
+          console.error("❌ No access token received! Token exchange might have failed.");
+          $('#errors').html('<p> ❌ No access token! Authorization failed. </p>');
+          return;
+      }
+  
+      console.log("✅ Access Token:", client.state.tokenResponse.access_token);
+  }).catch(function(error) {
+      console.error("❌ Error in FHIR.oauth2.ready():", error);
+      $('#errors').html('<p> ❌ Authorization failed. Check console for details. </p>');
+  });
+  
 
     return ret.promise();
   };

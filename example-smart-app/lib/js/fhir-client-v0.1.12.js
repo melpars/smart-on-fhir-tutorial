@@ -16968,15 +16968,48 @@ function completeTokenFlow(hash){
 }
 
 function completeCodeFlow(params){
+
+  console.log("🚀 Entering completeCodeFlow()");
+  console.log("🔎 OAuth Params:", params);
+
   if (!params){
     params = {
       code: urlParam('code'),
       state: urlParam('state')
     };
   }
+
+  if (!params || !params.state) {
+    console.error("❌ Missing state parameter in URL. Possible OAuth2 failure.");
+  } else {
+      console.log("🔎 Found state in URL:", params.state);
+  }
+
+  console.log("🔎 Checking session storage:", sessionStorage);
+  console.log("🔎 Attempting to retrieve sessionStorage[params.state]:", sessionStorage[params.state]);
+
+  if (!sessionStorage[params.state]) {
+    console.error("❌ No session data found for state:", params.state);
+    console.warn("⚠️ Possible session loss during redirect.");
+    
+    ret.reject("Session storage lost. Check if cookies are blocked or session expired.");
+    return ret.promise;
+  }
+
   
   var ret = Adapter.get().defer();
-  var state = JSON.parse(sessionStorage[params.state]);
+  var state;
+  try {
+      state = JSON.parse(sessionStorage[params.state]);
+      console.log("✅ Parsed state from sessionStorage:", state);
+  } catch (error) {
+      console.error("❌ Failed to parse session state:", error);
+      console.error("Stored session data:", sessionStorage[params.state]);
+      
+      ret.reject("Invalid session state. Possible corruption.");
+      return ret.promise;
+  }
+
 
   if (window.history.replaceState && BBClient.settings.replaceBrowserHistory){
     window.history.replaceState({}, "", window.location.toString().replace(window.location.search, ""));
@@ -17012,11 +17045,18 @@ function completeCodeFlow(params){
 
   var headers = {};
 
-  if (state.client.secret) {
-    headers['Authorization'] = 'Basic ' + btoa(state.client.client_id + ':' + state.client.secret);
-  } else {
-    data['client_id'] = state.client.client_id;
+  if (!state.client.client_id) {
+    console.error("❌ Missing client_id in state. Cannot exchange code for token.");
+    ret.reject("Client ID is missing. Check OAuth2 configuration.");
+    return ret.promise;
   }
+
+  if (state.client.secret) {
+      headers['Authorization'] = 'Basic ' + btoa(state.client.client_id + ':' + state.client.secret);
+  } else {
+      data['client_id'] = state.client.client_id;
+  }
+
 
   Adapter.get().http({
     method: 'POST',
@@ -17030,10 +17070,11 @@ function completeCodeFlow(params){
           }
        }
        ret.resolve(authz);
-  }, function(){
-    console.log("failed to exchange code for access_token", arguments);
-    ret.reject();
-  });
+    }, function(responseError){
+        console.error("❌ Failed to exchange code for access_token. Response:", responseError);
+        ret.reject("Token exchange failed. Check if Firely Auth rejected the request.");
+    });
+    
 
   return ret.promise;
 }
