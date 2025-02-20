@@ -76,18 +76,22 @@
 
     <script>
       console.log("🚀 Running extractData() in index.html...");
-
+    
+      // Detect if the authorization code is present
+      const urlParams = new URLSearchParams(window.location.search);
+      const authCode = urlParams.get("code");
+    
+      if (authCode) {
+          console.log("🔎 Authorization Code Detected:", authCode);
+      } else {
+          console.error("❌ No authorization code found in URL.");
+      }
+    
       extractData().then(
         function(p) {
           console.log("✅ Successfully extracted data:", p);
-
-          // Hide the loading spinner
           document.getElementById("loading").style.display = "none";
-
-          // Show patient data
           document.getElementById("holder").style.display = "block";
-
-          // Populate the UI
           drawVisualization(p);
         },
         function(error) {
@@ -96,6 +100,6 @@
           document.getElementById("errors").innerHTML = `<p> ❌ Failed to load patient data. See console for details. </p>`;
         }
       );
-    </script>    
+    </script>  
   </body>
 </html>

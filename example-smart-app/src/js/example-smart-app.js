@@ -5,6 +5,7 @@
     function onError(error) {
       console.error("❌ Loading error:", error);
       $('#errors').html(`<p> ❌ Failed to load data: ${JSON.stringify(error)} </p>`);
+      drawVisualization(defaultPatient()); // Ensure UI updates on failure
       ret.reject(error);
     }
 
@@ -14,6 +15,7 @@
       if (!smart.state.tokenResponse || !smart.state.tokenResponse.access_token) {
         console.error("❌ No access token received!");
         $('#errors').html('<p> ❌ No access token! Authorization failed. </p>');
+        drawVisualization(defaultPatient());
         return ret.reject("Missing access token");
       }
 
@@ -22,7 +24,8 @@
       if (!smart.patient) {
         console.error("❌ No patient found in the SMART client.");
         $('#errors').html('<p> ❌ No patient data available. </p>');
-        return onError("No patient data");
+        drawVisualization(defaultPatient());
+        return ret.reject("No patient data");
       }
 
       var patient = smart.patient;
@@ -49,22 +52,23 @@
         .fail(function(error) {
           console.error("❌ FHIR API Request Failed:", error);
           $('#errors').html('<p> ❌ Failed to fetch FHIR data. See console for details. </p>');
+          drawVisualization(defaultPatient());
           ret.reject(error);
         })
         .done(function(patient, obv) {
           console.log("✅ FHIR Patient Data:", patient);
           console.log("✅ FHIR Observations:", obv);
 
-          var byCodes = smart.byCodes(obv, 'code');
+          var byCodes = smart.byCodes(obv, 'code') || {};
           var gender = patient.gender || 'N/A';
           var fname = patient.name?.[0]?.given?.join(' ') || 'N/A';
           var lname = patient.name?.[0]?.family || 'N/A';
 
-          var height = getQuantityValueAndUnit(byCodes('8302-2')[0]) || 'N/A';
-          var systolicbp = getBloodPressureValue(byCodes('55284-4'),'8480-6') || 'N/A';
-          var diastolicbp = getBloodPressureValue(byCodes('55284-4'),'8462-4') || 'N/A';
-          var hdl = getQuantityValueAndUnit(byCodes('2085-9')[0]) || 'N/A';
-          var ldl = getQuantityValueAndUnit(byCodes('2089-1')[0]) || 'N/A';
+          var height = getQuantityValueAndUnit(byCodes['8302-2']?.[0]) || 'N/A';
+          var systolicbp = getBloodPressureValue(byCodes['55284-4'], '8480-6') || 'N/A';
+          var diastolicbp = getBloodPressureValue(byCodes['55284-4'], '8462-4') || 'N/A';
+          var hdl = getQuantityValueAndUnit(byCodes['2085-9']?.[0]) || 'N/A';
+          var ldl = getQuantityValueAndUnit(byCodes['2089-1']?.[0]) || 'N/A';
 
           var p = defaultPatient();
           p.birthdate = patient.birthDate || 'N/A';
@@ -79,8 +83,8 @@
 
           console.log("✅ Processed Patient Data:", p);
           
+          drawVisualization(p); // ✅ Ensure the UI updates
           ret.resolve(p);
-          drawVisualization(p); // ✅ Ensure the UI updates after resolving
         });
     }
 
@@ -88,8 +92,15 @@
 
     FHIR.oauth2.ready(onReady, function(error) {
       console.error("❌ Authorization Error:", error);
-      $('#errors').html('<p> ❌ Authorization Failed! See console for details. </p>');
-      ret.reject(error);
+    
+      // Check if error is undefined and provide a more helpful message
+      let errorMessage = error || "Unknown error - Check OAuth2 settings and network requests.";
+    
+      // Display error in the UI
+      $('#errors').html(`<p> ❌ Authorization Failed! ${errorMessage} See console for details. </p>`);
+    
+      // Ensure proper rejection
+      ret.reject(errorMessage);
     });
 
     return ret.promise();
@@ -97,15 +108,15 @@
 
   function defaultPatient(){
     return {
-      fname: '',
-      lname: '',
-      gender: '',
-      birthdate: '',
-      height: '',
-      systolicbp: '',
-      diastolicbp: '',
-      ldl: '',
-      hdl: ''
+      fname: 'N/A',
+      lname: 'N/A',
+      gender: 'N/A',
+      birthdate: 'N/A',
+      height: 'N/A',
+      systolicbp: 'N/A',
+      diastolicbp: 'N/A',
+      ldl: 'N/A',
+      hdl: 'N/A'
     };
   }
 
