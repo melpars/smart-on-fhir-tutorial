@@ -16985,6 +16985,7 @@ function completeCodeFlow(params){
       console.log("🔎 Found state in URL:", params.state);
   }
 
+  console.log("🔎 Found state in URL:", params.state);
   console.log("🔎 Checking session storage:", sessionStorage);
   console.log("🔎 Attempting to retrieve sessionStorage[params.state]:", sessionStorage[params.state]);
 
@@ -17043,20 +17044,21 @@ function completeCodeFlow(params){
       redirect_uri: state.client.redirect_uri
   };
 
-  var headers = {};
-
   if (!state.client.client_id) {
     console.error("❌ Missing client_id in state. Cannot exchange code for token.");
     ret.reject("Client ID is missing. Check OAuth2 configuration.");
     return ret.promise;
   }
 
+  var headers = {};
   if (state.client.secret) {
-      headers['Authorization'] = 'Basic ' + btoa(state.client.client_id + ':' + state.client.secret);
+    headers['Authorization'] = 'Basic ' + btoa(state.client.client_id + ':' + state.client.secret);
   } else {
-      data['client_id'] = state.client.client_id;
+    data['client_id'] = state.client.client_id;
   }
 
+  console.log("🔄 Sending token exchange request to:", state.provider.oauth2.token_uri);
+  console.log("📡 Token Exchange Payload:", data);
 
   Adapter.get().http({
     method: 'POST',
@@ -17064,20 +17066,21 @@ function completeCodeFlow(params){
     data: data,
     headers: headers
   }).then(function(authz){
+       console.log("✅ Token exchange successful:", authz);
        for (var i in params) {
           if (params.hasOwnProperty(i)) {
              authz[i] = params[i];
           }
        }
        ret.resolve(authz);
-    }, function(responseError){
-        console.error("❌ Failed to exchange code for access_token. Response:", responseError);
-        ret.reject("Token exchange failed. Check if Firely Auth rejected the request.");
-    });
-    
+  }, function(responseError){
+    console.error("❌ Failed to exchange code for access_token. Response:", responseError);
+    ret.reject("Token exchange failed. Check if Firely Auth rejected the request.");
+  });
 
   return ret.promise;
 }
+
 
 /**
  * This code is needed for the page refresh/reload workflow.
