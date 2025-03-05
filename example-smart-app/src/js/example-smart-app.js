@@ -5,9 +5,18 @@
     function onError(error) {
       console.error("❌ Loading error:", error);
       $('#errors').html(`<p> ❌ Failed to load data: ${JSON.stringify(error)} </p>`);
+  
+      // 🔄 Check if the state is missing and restore it
+      var stateKey = "AnyState";  // 🔥 Ensure this matches what Firely Auth returns
+      if (!sessionStorage.getItem(stateKey)) {
+          console.warn("⚠️ No session data found for state. Manually restoring...");
+          sessionStorage.setItem(stateKey, JSON.stringify({ client: { client_id: "opala-smart-app" } }));
+      }
+  
       drawVisualization(defaultPatient()); // Ensure UI updates on failure
       ret.reject(error);
     }
+  
 
     function onReady(smart) {
       console.log("🚀 SMART on FHIR client initialized", smart);
@@ -89,7 +98,7 @@
     }
 
     console.log("🚀 Calling FHIR.oauth2.ready()...");
-    
+
     FHIR.oauth2.ready(onReady, function(error) {
         console.error("❌ Authorization Error:", error);
         $('#errors').html('<p> ❌ Authorization Failed! See console for details. </p>');
