@@ -25,16 +25,31 @@
     <!-- https://github.com/cerner/fhir-client-cerner-additions -->
     <script src='./lib/js/fhir-client-cerner-additions-1.0.0.js'></script>
     <script>
-      console.log("🚀 Storing state in session before redirect...");
-      console.log("🔑 State:", "AnyState");
-      sessionStorage.setItem("AnyState", JSON.stringify({ client: { client_id: "opala-smart-app" } }));
-
+      // Generate unique state
+      const stateValue = 'SMART-' + Math.random().toString(36).substring(2, 15);
+      console.log("🚀 Storing state:", stateValue);
+  
+      // Store everything needed for later lookup by state
+      sessionStorage.setItem(stateValue, JSON.stringify({
+          client: {
+              client_id: 'opala-smart-app',
+              redirect_uri: 'https://melpars.github.io/smart-on-fhir-tutorial/example-smart-app/'
+          },
+          provider: {
+              oauth2: {
+                  token_uri: 'https://tst.opala.tech/connect/token'
+              }
+          }
+      }));
+  
+      // Start the authorization (using the same state)
       FHIR.oauth2.authorize({
-        'client_id': 'opala-smart-app',
-        'scope':  'patient/Patient.read patient/Observation.read launch/patient online_access openid profile',
-        'redirect_uri': 'https://melpars.github.io/smart-on-fhir-tutorial/example-smart-app/'
+          client_id: 'opala-smart-app',
+          scope: 'patient/Patient.read patient/Observation.read launch/patient online_access openid profile',
+          redirect_uri: 'https://melpars.github.io/smart-on-fhir-tutorial/example-smart-app/',
+          state: stateValue   // <- This is the key! This must match the one stored
       });
-    </script>
+  </script>
     <div class="spinner">
       <div class="bounce1"></div>
       <div class="bounce2"></div>
