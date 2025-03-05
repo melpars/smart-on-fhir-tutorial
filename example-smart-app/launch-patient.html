@@ -1,75 +1,67 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
+<head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <link rel='stylesheet' type='text/css' href='./src/css/example-smart-app.css'>
-    <!--
-      Temporarily disable cerner-smart-embeddable-lib
-      <link rel='stylesheet' type='text/css' href='./lib/css/cerner-smart-embeddable-lib-1.0.0.min.css'>
-    -->
-    <title>Example-SMART-App</title>
-  </head>
-  <body>
-    <!-- Required JS files to enable this page to embed within an MPage -->
-    <!--
-      Temporarily disable cerner-smart-embeddable-lib
-      <script src='https://cdnjs.cloudflare.com/ajax/libs/babel-polyfill/6.26.0/polyfill.min.js'></script>
-      <script src='./lib/js/cerner-smart-embeddable-lib-1.0.0.min.js'></script>
-    -->
+    <title>SMART App Launch</title>
+</head>
+<body>
 
-    <!-- FHIR Client JS Library -->
-    <script src='./lib/js/fhir-client-v0.1.12.js'></script>
+<script src="./lib/js/fhir-client-v0.1.12.js"></script>
+<script src="./lib/js/fhir-client-cerner-additions-1.0.0.js"></script>
 
-    <!-- Prevent session bleed caused by single threaded embedded browser and sessionStorage API -->
-    <!-- https://github.com/cerner/fhir-client-cerner-additions -->
-    <script src='./lib/js/fhir-client-cerner-additions-1.0.0.js'></script>
-    <script>
-      // Use a persistent state across reloads until success
-      // Use persistent state across reloads until launch succeeds
-      let stateValue = localStorage.getItem('smart-launch-state');
-      if (!stateValue) {
-          stateValue = 'SMART-' + Math.random().toString(36).substring(2, 15);
-          localStorage.setItem('smart-launch-state', stateValue);
-      }
+<script>
+    console.log("✅ FHIR loaded:", typeof FHIR);  // should be "object"
 
-      const fhirBaseUrl = 'https://tst.opala.tech/patient-access/premera/v1/fhir-r4';  // ✅ Your FHIR Server Base URL
-      const authorizeUrl = 'https://dev.opala.tech/connect/authorize';                    // ✅ Your Auth Server Authorize URL
-      const tokenUrl = 'https://dev.opala.tech/connect/token';                            // ✅ Your Auth Server Token URL
+    if (typeof FHIR === 'undefined') {
+        console.error("❌ FHIR library failed to load.");
+        document.body.innerHTML = "<h3>❌ FHIR library failed to load.</h3>";
+        throw new Error("FHIR not available");
+    }
 
-      console.log("🚀 Storing session data for state:", stateValue);
+    // Generate a unique state for this session
+    const stateValue = 'SMART-' + Math.random().toString(36).substring(2, 15);
 
-      sessionStorage.setItem(stateValue, JSON.stringify({
-          client: {
-              client_id: 'opala-smart-app',
-              redirect_uri: 'https://melpars.github.io/smart-on-fhir-tutorial/example-smart-app/'
-          },
-          provider: {
-              oauth2: {
-                  authorize_uri: authorizeUrl,
-                  token_uri: tokenUrl
-              }
-          },
-          "Server": fhirBaseUrl
-      }));
+    const fhirBaseUrl = 'https://tst.opala.tech/patient-access/premera/v1/fhir-r4';
+    const authorizeUrl = 'https://dev.opala.tech/connect/authorize';
+    const tokenUrl = 'https://dev.opala.tech/connect/token';
 
-      const params = {
+    // Store the state in both localStorage (for refresh robustness) and sessionStorage (for SMART client expectations)
+    console.log("🚀 Storing session data for state:", stateValue);
+    const launchData = {
+        client: {
+            client_id: 'opala-smart-app',
+            redirect_uri: 'https://melpars.github.io/smart-on-fhir-tutorial/example-smart-app/'
+        },
+        provider: {
+            oauth2: {
+                authorize_uri: authorizeUrl,
+                token_uri: tokenUrl
+            }
+        },
+        server: fhirBaseUrl
+    };
+
+    localStorage.setItem('smart-launch-state', stateValue);   // backup for manual debug if needed
+    sessionStorage.setItem(stateValue, JSON.stringify(launchData));
+
+    // Trigger authorization
+    console.log("✅ Calling authorize() with", {
         client_id: 'opala-smart-app',
         scope: 'patient/Patient.read patient/Observation.read launch/patient online_access openid profile',
         redirect_uri: 'https://melpars.github.io/smart-on-fhir-tutorial/example-smart-app/',
         state: stateValue,
         iss: fhirBaseUrl
-    };
+    });
 
-    console.log("✅ Calling authorize with:", params);
+    FHIR.oauth2.authorize({
+        client_id: 'opala-smart-app',
+        scope: 'patient/Patient.read patient/Observation.read launch/patient online_access openid profile',
+        redirect_uri: 'https://melpars.github.io/smart-on-fhir-tutorial/example-smart-app/',
+        state: stateValue,
+        iss: fhirBaseUrl
+    });
+</script>
 
-    FHIR.oauth2.authorize(params);
-
-    </script>
-    <div class="spinner">
-      <div class="bounce1"></div>
-      <div class="bounce2"></div>
-      <div class="bounce3"></div>
-    </div>
-  </body>
+</body>
 </html>
