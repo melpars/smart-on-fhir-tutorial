@@ -16920,11 +16920,6 @@ function urlParam(p, forceArray) {
   return result[0];
 }
 
-console.log("🚀 completeCodeFlow() params:", params);
-console.log("📦 Current sessionStorage:", sessionStorage);
-console.log("🔑 Looking for sessionStorage[params.state]:", params.state);
-console.log("🔎 Actual value found:", sessionStorage[params.state]);
-
 function stripTrailingSlash(str) {
     if(str.substr(-1) === '/') {
         return str.substr(0, str.length - 1);
@@ -16974,8 +16969,11 @@ function completeTokenFlow(hash){
 
 function completeCodeFlow(params){
 
-  console.log("🚀 Entering completeCodeFlow()");
-  console.log("🔎 OAuth Params:", params);
+  console.log("🚀 completeCodeFlow() params:", params);
+  console.log("📦 Current sessionStorage:", sessionStorage);
+  console.log("🔑 Looking for sessionStorage[params.state]:", params.state);
+  console.log("🔎 Actual value found:", sessionStorage[params.state]);
+
 
   if (!params){
     params = {
